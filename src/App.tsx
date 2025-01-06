@@ -1,4 +1,3 @@
-import React from 'react';
 import { Brain } from 'lucide-react';
 import { modules } from './data/modules';
 import ModuleCard from './components/ModuleCard';
