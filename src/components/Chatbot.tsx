@@ -9,6 +9,16 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true, // Note: In production, API calls should go through your backend
 });
 
+// Function to solve math problems
+const solveMathProblem = (question: string) => {
+  try {
+    const result = eval(question);  // Basic eval to calculate the result (be cautious with real-world eval usage)
+    return `The result is: ${result}`;
+  } catch (error) {
+    return "Sorry, I couldn't solve that. Please provide a valid math problem.";
+  }
+};
+
 export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -28,7 +38,6 @@ export default function Chatbot() {
     e.preventDefault();
     if (!input.trim()) return;
 
-
     const userMessage: Message = {
       id: Date.now().toString(),
       content: input,
@@ -42,7 +51,22 @@ export default function Chatbot() {
     setIsLoading(true);
 
     try {
+      // Check if the input is a math problem
+      if (input.toLowerCase().includes("solve") || /\d/.test(input)) {
+        const mathAnswer = solveMathProblem(input);
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: mathAnswer,
+          role: 'assistant',
+          timestamp: new Date(),
+        };
 
+        setMessages((prev) => [...prev, assistantMessage]);
+        setIsLoading(false);
+        return; // Prevent the OpenAI API call if it's a math question
+      }
+
+      // If not a math question, proceed with OpenAI API call
       const completion = await openai.chat.completions.create({
         messages: [
           {
@@ -62,7 +86,7 @@ export default function Chatbot() {
         model: 'gpt-3.5-turbo',
       });
 
-      // Create the assistant's response
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         content:
@@ -72,7 +96,7 @@ export default function Chatbot() {
         timestamp: new Date(),
       };
 
-      // Update state with the assistant's message
+
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error:', error);
