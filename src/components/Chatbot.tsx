@@ -36,7 +36,7 @@ export default function Chatbot() {
       timestamp: new Date(),
     };
 
-    // Update state to include the new message
+    // Update state
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
