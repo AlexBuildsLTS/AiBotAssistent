@@ -14,7 +14,7 @@ const solveMathProblem = (question: string) => {
   try {
     const result = eval(question);  // Basic eval to calculate the result (be cautious with real-world eval usage)
     return `The result is: ${result}`;
-  } catch (error) {
+  } catch {
     return "Sorry, I couldn't solve that. Please provide a valid math problem.";
   }
 };
@@ -86,17 +86,17 @@ export default function Chatbot() {
         model: 'gpt-3.5-turbo',
       });
 
-
+      // Create the assistant's response
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         content:
             completion.choices[0]?.message?.content ||
-            'I apologize, but I couldn\'t generate a response. Please try again.',
+            'I apologize, but there was an error processing your request. Please try again.',
         role: 'assistant',
         timestamp: new Date(),
       };
 
-
+      // Update state with the assistant's message
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error:', error);
