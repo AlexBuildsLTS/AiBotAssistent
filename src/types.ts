@@ -3,6 +3,8 @@ export interface Message {
   content: string;
   role: 'user' | 'assistant';
   timestamp: Date;
+  sqlQuery?: string;
+  mathResult?: string;
 }
 
 export interface Module {
@@ -11,3 +13,5 @@ export interface Module {
   description: string;
   topics: string[];
 }
+
+export type ChatMode = 'ai' | 'sql' | 'math';

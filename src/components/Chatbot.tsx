@@ -1,21 +1,44 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot } from 'lucide-react';
-import { Message } from '../types';
+import { Send, Bot, Database, Calculator } from 'lucide-react';
+import { Message, ChatMode } from '../types';
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true, // Note: In production, API calls should go through your backend
+  dangerouslyAllowBrowser: true,
 });
 
-// Function to solve math problems
-const solveMathProblem = (question: string) => {
+const executeSQLQuery = async (query: string): Promise<string> => {
   try {
-    const result = eval(question);  // Basic eval to calculate the result (be cautious with real-world eval usage)
-    return `The result is: ${result}`;
+    const response = await fetch('http://localhost:8080/api/sql/execute', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(query),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to execute SQL query.');
+    }
+
+    const data = await response.json();
+    return JSON.stringify(data, null, 2); // Format the results as JSON for display
+  } catch (error) {
+    console.error('Error:', error);
+    return 'Error executing SQL query.';
+  }
+};
+
+const solveMathProblem = (input: string): string => {
+  try {
+    const sanitizedInput = input.replace(/[^0-9+\-*/().]/g, '');
+    if (!sanitizedInput) return "Please provide a valid mathematical expression";
+
+    const result = Function(`return ${sanitizedInput}`)();
+    return isNaN(result) ? "Invalid mathematical expression" : `${result}`;
   } catch {
-    return "Sorry, I couldn't solve that. Please provide a valid math problem.";
+    return "Invalid mathematical expression";
   }
 };
 
@@ -23,9 +46,9 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [mode, setMode] = useState<ChatMode>('ai');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Function to scroll to the bottom of the chat
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -45,79 +68,119 @@ export default function Chatbot() {
       timestamp: new Date(),
     };
 
-    // Update state
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      // Check if the input is a math problem
-      if (input.toLowerCase().includes("solve") || /\d/.test(input)) {
-        const mathAnswer = solveMathProblem(input);
+      if (mode === 'math') {
+        const result = solveMathProblem(input);
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: mathAnswer,
+          content: `Mathematical Result: ${result}`,
+          role: 'assistant',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else if (mode === 'sql') {
+        const sqlResult = await executeSQLQuery(input);
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: `Query Result:\n${sqlResult}`,
+          role: 'assistant',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        const completion = await openai.chat.completions.create({
+          messages: [
+            {
+              role: 'system',
+              content: "You are AlexAI Assistant, an expert in AI. Help users with clear responses.",
+            },
+            { role: 'user', content: input },
+          ],
+          model: 'gpt-3.5-turbo',
+          max_tokens: 300,
+          temperature: 0.2,
+        });
+
+        const content =
+            completion.choices[0]?.message?.content ||
+            "I apologize, but I couldn't generate a response. Please try again.";
+
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content,
           role: 'assistant',
           timestamp: new Date(),
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
-        setIsLoading(false);
-        return; // Prevent the OpenAI API call if it's a math question
       }
-
-      // If not a math question, proceed with OpenAI API call
-      const completion = await openai.chat.completions.create({
-        messages: [
-          {
-            role: 'system',
-            content:
-                'You are AlexAI Assistant, an expert in AI, ML, DL, and Generative AI. You help users learn about these topics in a clear and engaging way. Keep responses focused on the learning modules and AI-related topics.',
-          },
-          ...messages.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-          {
-            role: 'user',
-            content: input, // Add the latest user input
-          },
-        ],
-        model: 'gpt-3.5-turbo',
-      });
-
-      // Create the assistant's response
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content:
-            completion.choices[0]?.message?.content ||
-            'I apologize, but there was an error processing your request. Please try again.',
-        role: 'assistant',
-        timestamp: new Date(),
-      };
-
-      // Update state with the assistant's message
-      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content:
-            'I apologize, but there was an error processing your request. Please make sure your OpenAI API key is properly configured.',
+        content: "I apologize, but there was an error processing your request. Please try again.",
         role: 'assistant',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false); // End loading state
+      setIsLoading(false);
+    }
+  };
+
+  const getModeIcon = () => {
+    switch (mode) {
+      case 'sql':
+        return <Database className="w-6 h-6 text-green-400 mr-2" />;
+      case 'math':
+        return <Calculator className="w-6 h-6 text-green-400 mr-2" />;
+      default:
+        return <Bot className="w-6 h-6 text-green-400 mr-2" />;
+    }
+  };
+
+  const getModeName = () => {
+    switch (mode) {
+      case 'sql':
+        return 'SQL Generator';
+      case 'math':
+        return 'Math Solver';
+      default:
+        return 'AlexAI Assistant';
+    }
+  };
+
+  const getPlaceholder = () => {
+    switch (mode) {
+      case 'sql':
+        return 'Describe the SQL query you need...';
+      case 'math':
+        return 'Enter a mathematical expression...';
+      default:
+        return 'Ask me anything about AI...';
     }
   };
 
   return (
       <div className="flex flex-col h-[600px] bg-navy-900 rounded-lg shadow-xl">
-        <div className="flex items-center p-4 bg-navy-800 rounded-t-lg">
-          <Bot className="w-6 h-6 text-green-400 mr-2" />
-          <h2 className="text-xl font-semibold text-white">AlexAI Assistant</h2>
+        <div className="flex items-center justify-between p-4 bg-navy-800 rounded-t-lg">
+          <div className="flex items-center">
+            {getModeIcon()}
+            <h2 className="text-xl font-semibold text-white">{getModeName()}</h2>
+          </div>
+          <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as ChatMode)}
+              className="bg-navy-700 text-white px-3 py-1 rounded-md border border-navy-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <option value="ai">AI Assistant</option>
+            <option value="sql">SQL Generator</option>
+            <option value="math">Math Solver</option>
+          </select>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -141,9 +204,7 @@ export default function Chatbot() {
           ))}
           {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-navy-700 text-gray-100 p-3 rounded-lg">
-                  Thinking...
-                </div>
+                <div className="bg-navy-700 text-gray-100 p-3 rounded-lg">Thinking...</div>
               </div>
           )}
           <div ref={messagesEndRef} />
@@ -155,7 +216,7 @@ export default function Chatbot() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask me anything about AI..."
+                placeholder={getPlaceholder()}
                 className="flex-1 p-2 rounded-lg bg-navy-900 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
             <button
