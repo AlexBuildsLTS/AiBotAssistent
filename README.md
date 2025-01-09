@@ -76,26 +76,26 @@ openai.api.key=your_openai_key_here
 ./mvnw spring-boot:run
 
 
-
-alexai-assistant/
-├── frontend/
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── data/          # Static data and constants
-│   │   ├── types/         # TypeScript interfaces
-│   │   ├── utils/         # Utility functions
-│   │   └── services/      # API services
-│   └── .env               # Environment variables
-├── backend/
-│   ├── src/main/java/
-│   │   └── com/alexai/
-│   │       ├── controllers/  # API endpoint handlers
-│   │       ├── services/     # Business logic
-│   │       ├── models/       # Data models/entities
-│   │       └── config/       # Configuration files
-│   └── src/main/resources/
-│       ├── application.properties
-└── README.md
+## 🏗️ Project Structure
+- alexai-assistant/
+- ├── frontend/
+- │   ├── src/
+- │   │   ├── components/    # React components
+- │   │   ├── data/          # Static data and constants
+- │   │   ├── types/         # TypeScript interfaces
+- │   │   ├── utils/         # Utility functions
+- │   │   └── services/      # API services
+- │   └── .env               # Environment variables
+- ├── backend/
+- │   ├── src/main/java/
+- │   │   └── com/alexai/
+- │   │       ├── controllers/  # API endpoint handlers
+- │   │       ├── services/     # Business logic
+- │   │       ├── models/       # Data models/entities
+- │   │       └── config/       # Configuration files
+- │   └── src/main/resources/
+- │       ├── application.properties
+- └── README.md
 
 
 
