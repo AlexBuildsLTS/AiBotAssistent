@@ -1,49 +1,40 @@
-create table country
-(
-    Code           char(3)        default ''   not null
-        primary key,
-    Name           char(52)       default ''   not null,
-    Continent      enum ('Asia', 'Europe', 'North America', 'Africa', 'Oceania', 'Antarctica', 'South America') default 'Asia' not null,
-    Region         char(26)       default ''   not null,
-    SurfaceArea    decimal(10, 2) default 0.00 not null,
-    IndepYear      smallint null,
-    Population     int            default 0    not null,
-    LifeExpectancy decimal(3, 1) null,
-    GNP            decimal(10, 2) null,
-    GNPOld         decimal(10, 2) null,
-    LocalName      char(45)       default ''   not null,
-    GovernmentForm char(45)       default ''   not null,
-    HeadOfState    char(60) null,
-    Capital        int null,
-    Code2          char(2)        default ''   not null
+CREATE TABLE country (
+                         Code CHAR(3) NOT NULL DEFAULT '',
+                         Name CHAR(52) NOT NULL DEFAULT '',
+                         Continent ENUM('Asia', 'Europe', 'North America', 'Africa', 'Oceania', 'Antarctica', 'South America') NOT NULL DEFAULT 'Asia',
+                         Region CHAR(26) NOT NULL DEFAULT '',
+                         SurfaceArea DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+                         IndepYear SMALLINT NULL,
+                         Population INT NOT NULL DEFAULT 0,
+                         LifeExpectancy DECIMAL(3, 1) NULL,
+                         GNP DECIMAL(10, 2) NULL,
+                         GNPOld DECIMAL(10, 2) NULL,
+                         LocalName CHAR(45) NOT NULL DEFAULT '',
+                         GovernmentForm CHAR(45) NOT NULL DEFAULT '',
+                         HeadOfState CHAR(60) NULL,
+                         Capital INT NULL,
+                         Code2 CHAR(2) NOT NULL DEFAULT '',
+                         PRIMARY KEY (Code)
 );
 
-create table city
-(
-    ID          int auto_increment
-        primary key,
-    Name        char(35) default '' not null,
-    CountryCode char(3)  default '' not null,
-    District    char(20) default '' not null,
-    Population  int      default 0  not null,
-    constraint city_ibfk_1
-        foreign key (CountryCode) references country (Code)
+CREATE TABLE city (
+                      ID INT AUTO_INCREMENT PRIMARY KEY,
+                      Name CHAR(35) NOT NULL DEFAULT '',
+                      CountryCode CHAR(3) NOT NULL DEFAULT '',
+                      District CHAR(20) NOT NULL DEFAULT '',
+                      Population INT NOT NULL DEFAULT 0,
+                      CONSTRAINT city_ibfk_1 FOREIGN KEY (CountryCode) REFERENCES country (Code)
 );
 
-create index CountryCode
-    on city (CountryCode);
+CREATE INDEX idx_CountryCode ON city (CountryCode);
 
-create table countrylanguage
-(
-    CountryCode char(3)       default ''  not null,
-    Language    char(30)      default ''  not null,
-    IsOfficial  enum ('T', 'F') default 'F' not null,
-    Percentage  decimal(4, 1) default 0.0 not null,
-    primary key (CountryCode, Language),
-    constraint countryLanguage_ibfk_1
-        foreign key (CountryCode) references country (Code)
+CREATE TABLE countrylanguage (
+                                 CountryCode CHAR(3) NOT NULL DEFAULT '',
+                                 Language CHAR(30) NOT NULL DEFAULT '',
+                                 IsOfficial ENUM('T', 'F') NOT NULL DEFAULT 'F',
+                                 Percentage DECIMAL(4, 1) NOT NULL DEFAULT 0.0,
+                                 PRIMARY KEY (CountryCode, Language),
+                                 CONSTRAINT countryLanguage_ibfk_1 FOREIGN KEY (CountryCode) REFERENCES country (Code)
 );
 
-create index CountryCode
-    on countrylanguage (CountryCode);
-
+CREATE INDEX idx_CountryCode ON countrylanguage (CountryCode);
